@@ -7,8 +7,8 @@ const path = require('path');
 const packages = [
   'tailwindcss',
   'postcss-cli',
-  'purgecss',
   '@fullhuman/postcss-purgecss',
+  'cssnano',
   'autoprefixer'
 ];
 const configFiles = ['postcss.config.js'];
@@ -68,8 +68,9 @@ async function main() {
 
     process.chdir(appName);
     await execSyncWithOutput('npx tailwind init');
+    await execSyncWithOutput(`yarn build:style`);
 
-    console.log(`In App.tsx, add\nimport 'styles/tailwind.css';`);
+    console.log(`\n\nIn App.tsx, add\nimport 'styles/tailwind.css';`);
   } catch (err) {
     console.error(err);
     process.exit(1);
