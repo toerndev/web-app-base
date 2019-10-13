@@ -19,8 +19,9 @@ async function modifyJson(jsonPath, fn) {
   fs.writeFileSync(jsonPath, JSON.stringify(obj, null, 2), 'utf8');
 }
 
+// pattern must not contain double quotes
 async function runSed(filepath, pattern) {
-  const cmd = `sed -i '${pattern}' '${filepath}'`;
+  const cmd = `sed -i "${pattern}" '${filepath}'`;
   console.log(cmd);
   await execSyncWithOutput(cmd);
 }

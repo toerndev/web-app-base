@@ -34,25 +34,33 @@ async function main() {
   }
 
   try {
+    // Install packages
     await util.execSyncWithOutput(
       `yarn --cwd ./${appName} add ${packages.join(' ')}`
     );
+
+    // Copy PostCSS config
     configFiles.forEach(file => {
       const src = path.join(__dirname, file);
       const dst = path.join(appName, file);
       console.log(`${src} -> ${dst}`);
       fs.copyFileSync(src, dst);
     });
+
+    // Set up style path
     const stylePath = path.join(appName, 'src/style');
     fs.mkdirSync(stylePath);
     fs.writeFileSync(path.join(stylePath, 'tailwind.css'), tailwindConfig);
 
+    // Compile CSS in build and dev scripts
     await util.modifyJson(path.join(appName, 'package.json'), obj => {
       const postcssScript =
         'postcss src/style/tailwind.css -o src/style/tailwind.min.css';
 
       obj.scripts['build:app'] = obj.scripts['build'];
-      obj.scripts['build:style'] = `${postcssScript} --env production --verbose`;
+      obj.scripts[
+        'build:style'
+      ] = `${postcssScript} --env production --verbose`;
       obj.scripts['build'] = 'yarn build:style && yarn build:app';
 
       obj.scripts['dev:app'] = obj.scripts['dev'];
@@ -63,11 +71,13 @@ async function main() {
       obj.scripts['dev'] = 'concurrently "yarn dev:style" "yarn dev:app"';
     });
 
+    // Config files
     process.chdir(appName);
     await util.execSyncWithOutput('npx tailwind init');
     await util.execSyncWithOutput(`yarn build:style`);
 
-    console.log(`\n\nIn App.tsx, add\nimport 'styles/tailwind.min.css';`);
+    // Add CSS import to app
+    await util.runSed('src/App.tsx', '2iimport \'style/tailwind.min.css\';');
   } catch (err) {
     console.error(err);
     process.exit(1);
