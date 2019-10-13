@@ -15,14 +15,14 @@ async function execSyncWithOutput(cmd) {
 async function modifyJson(jsonPath, fn) {
   const jsonStr = fs.readFileSync(jsonPath, 'utf8');
   const obj = JSON.parse(jsonStr);
-  fn(obj)
+  fn(obj);
   fs.writeFileSync(jsonPath, JSON.stringify(obj, null, 2), 'utf8');
 }
 
 async function runSed(filepath, pattern) {
   const cmd = `sed -i '${pattern}' '${filepath}'`;
   console.log(cmd);
-  await execSyncWithOutput(cmd)
+  await execSyncWithOutput(cmd);
 }
 
 module.exports = {

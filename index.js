@@ -15,10 +15,10 @@ const eslintRc = {
         // root 'extends' from above is inherited and applied to these files too.
         // If order turns out to matter, these should probably go right after 'react-app'.
         'plugin:@typescript-eslint/recommended',
-        'prettier/@typescript-eslint'
-      ]
-    }
-  ]
+        'prettier/@typescript-eslint',
+      ],
+    },
+  ],
 };
 const dotEnv = `BROWSER=none
 GENERATE_SOURCEMAP=false`;
@@ -46,7 +46,7 @@ async function main() {
       'index.css',
       'App.css',
       'logo.svg',
-      'serviceWorker.ts'
+      'serviceWorker.ts',
     ].map(file => path.join('src', file));
     const filesToDelete = ['README.md', ...filesInSrc];
     filesToDelete.forEach(file => {
@@ -59,14 +59,21 @@ async function main() {
 
     // CRA file modifications
     const sedPatterns = [
-      {file: 'src/App.tsx', pattern: '/css/d; /logo/d' },
-      {file: 'src/index.tsx', pattern: '/css/d; /serviceWorker/d'},
-    ]
+      { file: 'src/App.tsx', pattern: '/css/d; /logo/d' },
+      { file: 'src/index.tsx', pattern: '/css/d; /serviceWorker/d' },
+    ];
     for (let idx = 0; idx < sedPatterns.length; idx++) {
       const { file, pattern } = sedPatterns[idx];
       await util.runSed(file, pattern);
     }
-    console.log('\n')
+    console.log('\n');
+
+    // Rename default scripts
+    await util.modifyJson('package.json', obj => {
+      obj.scripts['dev'] = obj.scripts['start'];
+      delete obj.scripts['start'];
+      delete obj.scripts['eject'];
+    });
 
     // Write config files
     fs.writeFileSync('.prettierrc', JSON.stringify(prettierRc, null, 2));
@@ -79,7 +86,7 @@ async function main() {
     // Enable absolute imports
     await util.modifyJson('tsconfig.json', obj => {
       obj.compilerOptions.baseUrl = 'src';
-    })
+    });
   } catch (err) {
     console.error(err);
     process.exit(1);

@@ -11,7 +11,7 @@ const packages = [
   '@fullhuman/postcss-purgecss',
   'cssnano',
   'autoprefixer',
-  'concurrently'
+  'concurrently',
 ];
 const configFiles = ['postcss.config.js'];
 const tailwindConfig = `@tailwind base;
@@ -47,17 +47,21 @@ async function main() {
     fs.mkdirSync(stylePath);
     fs.writeFileSync(path.join(stylePath, 'tailwind.css'), tailwindConfig);
 
-    const packageDotJson = path.join(appName, 'package.json');
-    await util.modifyJson(packageDotJson, obj => {
+    await util.modifyJson(path.join(appName, 'package.json'), obj => {
       const postcssScript =
         'postcss src/style/tailwind.css -o src/style/tailwind.min.css';
-      obj.scripts['build:style'] = `${postcssScript} --env production`;
-      obj.scripts['dev:style'] = `${postcssScript} --watch --poll 500 --verbose`;
 
-      // TODO: Rename start -> dev:app, build -> build:app in index.js to make scripts more coherent.
-      obj.scripts['build:all'] = 'yarn build:style && yarn build';
-      obj.scripts['dev'] = 'concurrently \"yarn dev:style\" \"yarn start\"';
-    })
+      obj.scripts['build:app'] = obj.scripts['build'];
+      obj.scripts['build:style'] = `${postcssScript} --env production --verbose`;
+      obj.scripts['build'] = 'yarn build:style && yarn build:app';
+
+      obj.scripts['dev:app'] = obj.scripts['dev'];
+      // Only --watch without --poll seemed to get stuck after a few changes
+      obj.scripts[
+        'dev:style'
+      ] = `${postcssScript} --watch --poll 500 --verbose`;
+      obj.scripts['dev'] = 'concurrently "yarn dev:style" "yarn dev:app"';
+    });
 
     process.chdir(appName);
     await util.execSyncWithOutput('npx tailwind init');
