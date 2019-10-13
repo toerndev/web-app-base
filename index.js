@@ -51,18 +51,21 @@ async function main() {
     await execSyncWithOutput(`yarn create react-app ${name} --typescript`);
     console.log('\n');
     process.chdir(name);
-    console.log(process.cwd())
 
-    const filesInSrc = ['index.css', 'App.css', 'logo.svg', 'serviceWorker.ts'].map(file => path.join('src', file));
+    const filesInSrc = [
+      'index.css',
+      'App.css',
+      'logo.svg',
+      'serviceWorker.ts'
+    ].map(file => path.join('src', file));
     const filesToDelete = ['README.md', ...filesInSrc];
     filesToDelete.forEach(file => {
       try {
-        fs.unlinkSync(file)
+        fs.unlinkSync(file);
       } catch (err) {
-        console.error(`${file} suspiciously missing, can't delete`)
+        console.error(`${file} suspiciously missing, can't delete`);
       }
-    })
-
+    });
 
     fs.writeFileSync('.prettierrc', JSON.stringify(prettierRc, null, 2));
     fs.writeFileSync(
@@ -84,7 +87,6 @@ async function main() {
   await execSyncWithOutput(
     'yarn add prettier eslint-config-prettier eslint-plugin-prettier'
   );
-
 }
 
 main();

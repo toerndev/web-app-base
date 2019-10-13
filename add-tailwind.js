@@ -9,7 +9,8 @@ const packages = [
   'postcss-cli',
   '@fullhuman/postcss-purgecss',
   'cssnano',
-  'autoprefixer'
+  'autoprefixer',
+  'concurrently'
 ];
 const configFiles = ['postcss.config.js'];
 const tailwindConfig = `@tailwind base;
@@ -47,30 +48,35 @@ async function main() {
       `yarn --cwd ./${appName} add ${packages.join(' ')}`
     );
     configFiles.forEach(file => {
-      const src = path.join(__dirname, file)
-      const dst = path.join(appName, file)
-      console.log(`${src} -> ${dst}`)
+      const src = path.join(__dirname, file);
+      const dst = path.join(appName, file);
+      console.log(`${src} -> ${dst}`);
       fs.copyFileSync(src, dst);
     });
-    const stylesPath = path.join(appName, 'src/styles');
-    fs.mkdirSync(stylesPath);
-    fs.writeFileSync(path.join(stylesPath, 'index.css'), tailwindConfig);
+    const stylePath = path.join(appName, 'src/style');
+    fs.mkdirSync(stylePath);
+    fs.writeFileSync(path.join(stylePath, 'tailwind.css'), tailwindConfig);
 
     const pkgJsonFile = path.join(appName, 'package.json');
     const pkgJsonStr = fs.readFileSync(pkgJsonFile, 'utf8');
     const pkgJson = JSON.parse(pkgJsonStr);
-    pkgJson.scripts['tailwind'] =
-      'tailwind build src/styles/index.css -o src/styles/tailwind.src.css';
-    pkgJson.scripts['postcss'] =
-      'postcss src/styles/tailwind.src.css -o src/styles/tailwind.css --env production';
-    pkgJson.scripts['build:style'] = 'yarn tailwind && yarn postcss';
+
+    const postcssScript =
+      'postcss src/style/tailwind.css -o src/style/tailwind.min.css';
+    pkgJson.scripts['build:style'] = `${postcssScript} --env production`;
+    pkgJson.scripts['dev:style'] = `${postcssScript} --watch --verbose`;
+
+    // TODO: Rename start -> dev:app, build -> build:app in index.js to make scripts more coherent.
+    pkgJson.scripts['build:all'] = 'yarn build:style && yarn build';
+    pkgJson.scripts['dev'] = 'concurrently \"yarn dev:style\" \"yarn start\"';
+
     fs.writeFileSync(pkgJsonFile, JSON.stringify(pkgJson, null, 2), 'utf8');
 
     process.chdir(appName);
     await execSyncWithOutput('npx tailwind init');
     await execSyncWithOutput(`yarn build:style`);
 
-    console.log(`\n\nIn App.tsx, add\nimport 'styles/tailwind.css';`);
+    console.log(`\n\nIn App.tsx, add\nimport 'styles/tailwind.min.css';`);
   } catch (err) {
     console.error(err);
     process.exit(1);
