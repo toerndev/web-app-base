@@ -57,6 +57,18 @@ async function main() {
       }
     });
 
+    // CRA file modifications
+    const sedPatterns = [
+      {file: 'src/App.tsx', pattern: '/css/d; /logo/d' },
+      {file: 'src/index.tsx', pattern: '/css/d; /serviceWorker/d'},
+    ]
+    for (let idx = 0; idx < sedPatterns.length; idx++) {
+      const { file, pattern } = sedPatterns[idx];
+      await util.runSed(file, pattern);
+    }
+    console.log('\n')
+
+    // Write config files
     fs.writeFileSync('.prettierrc', JSON.stringify(prettierRc, null, 2));
     fs.writeFileSync(
       '.eslintrc.js',
