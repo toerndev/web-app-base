@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-const exec = require('child_process').exec;
 const fs = require('fs');
 const path = require('path');
+
+const util = require('./util');
 
 const packages = [
   'tailwindcss',
@@ -17,17 +18,6 @@ const tailwindConfig = `@tailwind base;
 @tailwind components;
 @tailwind utilities;
 `;
-
-async function execSyncWithOutput(cmd) {
-  return new Promise((resolve, reject) => {
-    const proc = exec(cmd, err => {
-      reject(err);
-    });
-    proc.stdout.pipe(process.stdout);
-    proc.stderr.pipe(process.stderr);
-    proc.on('exit', () => resolve());
-  });
-}
 
 async function main() {
   const appName = process.argv[2];
@@ -44,7 +34,7 @@ async function main() {
   }
 
   try {
-    await execSyncWithOutput(
+    await util.execSyncWithOutput(
       `yarn --cwd ./${appName} add ${packages.join(' ')}`
     );
     configFiles.forEach(file => {
@@ -57,24 +47,21 @@ async function main() {
     fs.mkdirSync(stylePath);
     fs.writeFileSync(path.join(stylePath, 'tailwind.css'), tailwindConfig);
 
-    const pkgJsonFile = path.join(appName, 'package.json');
-    const pkgJsonStr = fs.readFileSync(pkgJsonFile, 'utf8');
-    const pkgJson = JSON.parse(pkgJsonStr);
+    const packageDotJson = path.join(appName, 'package.json');
+    await util.modifyJson(packageDotJson, obj => {
+      const postcssScript =
+        'postcss src/style/tailwind.css -o src/style/tailwind.min.css';
+      obj.scripts['build:style'] = `${postcssScript} --env production`;
+      obj.scripts['dev:style'] = `${postcssScript} --watch --poll 500 --verbose`;
 
-    const postcssScript =
-      'postcss src/style/tailwind.css -o src/style/tailwind.min.css';
-    pkgJson.scripts['build:style'] = `${postcssScript} --env production`;
-    pkgJson.scripts['dev:style'] = `${postcssScript} --watch --verbose`;
-
-    // TODO: Rename start -> dev:app, build -> build:app in index.js to make scripts more coherent.
-    pkgJson.scripts['build:all'] = 'yarn build:style && yarn build';
-    pkgJson.scripts['dev'] = 'concurrently \"yarn dev:style\" \"yarn start\"';
-
-    fs.writeFileSync(pkgJsonFile, JSON.stringify(pkgJson, null, 2), 'utf8');
+      // TODO: Rename start -> dev:app, build -> build:app in index.js to make scripts more coherent.
+      obj.scripts['build:all'] = 'yarn build:style && yarn build';
+      obj.scripts['dev'] = 'concurrently \"yarn dev:style\" \"yarn start\"';
+    })
 
     process.chdir(appName);
-    await execSyncWithOutput('npx tailwind init');
-    await execSyncWithOutput(`yarn build:style`);
+    await util.execSyncWithOutput('npx tailwind init');
+    await util.execSyncWithOutput(`yarn build:style`);
 
     console.log(`\n\nIn App.tsx, add\nimport 'styles/tailwind.min.css';`);
   } catch (err) {

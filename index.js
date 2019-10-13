@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-const exec = require('child_process').exec;
 const fs = require('fs');
 const path = require('path');
+
+const util = require('./util');
 
 const prettierRc = { singleQuote: true, trailingComma: 'es5' };
 const eslintRc = {
@@ -22,17 +23,6 @@ const eslintRc = {
 const dotEnv = `BROWSER=none
 GENERATE_SOURCEMAP=false`;
 
-async function execSyncWithOutput(cmd) {
-  return new Promise((resolve, reject) => {
-    const proc = exec(cmd, err => {
-      reject(err);
-    });
-    proc.stdout.pipe(process.stdout);
-    proc.stderr.pipe(process.stderr);
-    proc.on('exit', () => resolve());
-  });
-}
-
 async function main() {
   const name = process.argv[2];
   if (!name) {
@@ -48,7 +38,7 @@ async function main() {
   }
 
   try {
-    await execSyncWithOutput(`yarn create react-app ${name} --typescript`);
+    await util.execSyncWithOutput(`yarn create react-app ${name} --typescript`);
     console.log('\n');
     process.chdir(name);
 
@@ -75,16 +65,16 @@ async function main() {
     fs.writeFileSync('.env', dotEnv);
 
     // Enable absolute imports
-    tsconfig = JSON.parse(fs.readFileSync('tsconfig.json'));
-    tsconfig.compilerOptions.baseUrl = 'src';
-    fs.writeFileSync('tsconfig.json', JSON.stringify(tsconfig, null, 2));
+    await util.modifyJson('tsconfig.json', obj => {
+      obj.compilerOptions.baseUrl = 'src';
+    })
   } catch (err) {
     console.error(err);
     process.exit(1);
   }
 
   // "Gaeron's policy" (?): it's static output anyway so don't bother with peerDeps
-  await execSyncWithOutput(
+  await util.execSyncWithOutput(
     'yarn add prettier eslint-config-prettier eslint-plugin-prettier'
   );
 }
