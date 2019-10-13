@@ -15,6 +15,11 @@ const packages = [
 ];
 const configFiles = ['postcss.config.js'];
 const tailwindConfig = `@tailwind base;
+
+html, body, #root {
+  height: 100%;
+}
+
 @tailwind components;
 @tailwind utilities;
 `;
